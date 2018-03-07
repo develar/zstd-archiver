@@ -4,7 +4,7 @@ release:
   name_template: zstd-archiver
 
 builds:
-  -
+  - binary: zstd-archiver
     goos:
       - windows
       - darwin
