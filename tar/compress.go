@@ -13,7 +13,14 @@ import (
 	"github.com/DataDog/zstd"
 )
 
-func Compress(source string, output string, blockSize int, isSystemIndependentFileInfo bool) (error) {
+type CompressionOptions struct {
+	Level     int
+	BlockSize int
+
+	IsSystemIndependentFileInfo bool
+}
+
+func Compress(source string, output string, options CompressionOptions) (error) {
 	outputFile, err := fsutil.CreateFile(output)
 	if err != nil {
 		return errors.WithStack(err)
@@ -22,9 +29,9 @@ func Compress(source string, output string, blockSize int, isSystemIndependentFi
 	defer outputFile.Close()
 
 	// 22 doesn't produce significant size difference, but took ~1.5x more time
-	zstdWriter := zstd.NewWriterLevel(outputFile, 19)
+	zstdWriter := zstd.NewWriterLevel(outputFile, options.Level)
 	// without buffer, compression is not good.
-	bufferWriter := bufio.NewWriterSize(zstdWriter, blockSize)
+	bufferWriter := bufio.NewWriterSize(zstdWriter, options.BlockSize)
 	tarWriter := tar.NewWriter(bufferWriter)
 	copyBuffer := make([]byte, 32 * 1024)
 
@@ -34,7 +41,7 @@ func Compress(source string, output string, blockSize int, isSystemIndependentFi
 		}
 
 		var header *tar.Header
-		if isSystemIndependentFileInfo {
+		if options.IsSystemIndependentFileInfo {
 			header, err = SystemIndependentFileInfoHeader(info, path)
 		} else {
 			header, err = tar.FileInfoHeader(info, path)
